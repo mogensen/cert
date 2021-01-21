@@ -22,7 +22,7 @@ func stubCert() {
 				},
 				DNSNames:  []string{host, "www." + host},
 				NotBefore: time.Date(2017, time.January, 1, 0, 0, 0, 0, time.UTC),
-				NotAfter:  time.Date(2018, time.January, 1, 0, 0, 0, 0, time.UTC),
+				NotAfter:  time.Date(2118, time.January, 1, 0, 0, 0, 0, time.UTC),
 			},
 			&x509.Certificate{
 				Issuer: pkix.Name{
@@ -33,7 +33,7 @@ func stubCert() {
 				},
 				DNSNames:  []string{host, "*." + host},
 				NotBefore: time.Date(2017, time.January, 1, 0, 0, 0, 0, time.UTC),
-				NotAfter:  time.Date(2018, time.January, 1, 0, 0, 0, 0, time.UTC),
+				NotAfter:  time.Date(2118, time.January, 1, 0, 0, 0, 0, time.UTC),
 			},
 		}, "127.0.0.1", nil
 	}
