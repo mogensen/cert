@@ -13,6 +13,8 @@ import (
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/cloudflare/cfssl/revoke"
 )
 
 var SkipVerify = false
@@ -133,7 +135,8 @@ var serverCert = func(host, port string) ([]*x509.Certificate, string, error) {
 
 	cs, err := cipherSuite()
 	if err != nil {
-		return []*x509.Certificate{&x509.Certificate{}}, "", err
+		c, ip, _ := serverCertRaw(host, port)
+		return c, ip, err
 	}
 
 	conn, err := tls.DialWithDialer(d, "tcp", host+":"+port, &tls.Config{
@@ -142,7 +145,28 @@ var serverCert = func(host, port string) ([]*x509.Certificate, string, error) {
 		MaxVersion:         tlsVersion(),
 	})
 	if err != nil {
-		return []*x509.Certificate{&x509.Certificate{}}, "", err
+		c, ip, _ := serverCertRaw(host, port)
+		return c, ip, err
+	}
+	defer conn.Close()
+
+	addr := conn.RemoteAddr()
+	ip, _, _ := net.SplitHostPort(addr.String())
+	cert := conn.ConnectionState().PeerCertificates
+
+	return cert, ip, nil
+}
+
+func serverCertRaw(host, port string) ([]*x509.Certificate, string, error) {
+	d := &net.Dialer{
+		Timeout: time.Duration(TimeoutSeconds) * time.Second,
+	}
+
+	conn, err := tls.DialWithDialer(d, "tcp", host+":"+port, &tls.Config{
+		InsecureSkipVerify: true,
+	})
+	if err != nil {
+		return []*x509.Certificate{{}}, "", err
 	}
 	defer conn.Close()
 
@@ -155,12 +179,14 @@ var serverCert = func(host, port string) ([]*x509.Certificate, string, error) {
 
 func NewCert(hostport string) *Cert {
 	host, port, err := SplitHostPort(hostport)
+
+	errorMsg := ""
 	if err != nil {
 		return &Cert{DomainName: host, Error: err.Error()}
 	}
 	certChain, ip, err := serverCert(host, port)
 	if err != nil {
-		return &Cert{DomainName: host, Error: err.Error()}
+		errorMsg = err.Error()
 	}
 	cert := certChain[0]
 
@@ -168,6 +194,29 @@ func NewCert(hostport string) *Cert {
 	loc = time.Local
 	if UTC {
 		loc = time.UTC
+	}
+
+	if err == nil {
+		revoked, ok, err := revoke.VerifyCertificateError(cert)
+
+		if !revoked && !ok {
+			// an error was encountered while checking revocations.
+			errorMsg = "an error was encountered while checking revocations"
+		} else if !revoked && ok {
+			// the certificate was checked successfully and it is not revoked.
+		} else if revoked && ok {
+			//  the certificate was checked successfully and it is revoked.
+
+			if err != nil {
+				errorMsg = "x905: " + strings.Trim(err.Error(), "\n")
+			} else {
+				errorMsg = "x905: Certificate have been marked as revoked"
+			}
+		} else if revoked && !ok {
+			errorMsg = "an error was encountered while checking revocations"
+		} else if err != nil {
+			errorMsg = "x905: " + err.Error()
+		}
 	}
 
 	return &Cert{
@@ -178,7 +227,7 @@ func NewCert(hostport string) *Cert {
 		SANs:       cert.DNSNames,
 		NotBefore:  cert.NotBefore.In(loc).String(),
 		NotAfter:   cert.NotAfter.In(loc).String(),
-		Error:      "",
+		Error:      errorMsg,
 		certChain:  certChain,
 	}
 }
