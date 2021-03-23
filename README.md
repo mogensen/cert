@@ -28,23 +28,25 @@ Give domain names as arguments.
 
 ```sh
 $ cert github.com google.co.jp
-DomainName: github.com
-IP:         192.30.255.113
-Issuer:     DigiCert SHA2 Extended Validation Server CA
-NotBefore:  2016-03-10 09:00:00 +0900 JST
-NotAfter:   2018-05-17 21:00:00 +0900 JST
-CommonName: github.com
-SANs:       [github.com www.github.com]
-Error:
+DomainName:    github.com
+IP:            140.82.121.3
+Issuer:        DigiCert TLS Hybrid ECC SHA384 2020 CA1
+NotBefore:     2021-03-12 01:00:00 +0100 CET
+NotAfter:      2022-03-24 00:59:59 +0100 CET
+CommonName:    github.com
+MinTLSVersion: TLS 1.2
+SANs:          [github.com www.github.com]
+Error:         
 
-DomainName: google.co.jp
-IP:         216.58.196.227
-Issuer:     Google Internet Authority G3
-NotBefore:  2017-10-17 19:59:51 +0900 JST
-NotAfter:   2018-01-09 19:00:00 +0900 JST
-CommonName: *.google.co.jp
-SANs:       [*.google.co.jp google.co.jp]
-Error:
+DomainName:    google.co.jp
+IP:            216.58.213.195
+Issuer:        GTS CA 1O1
+NotBefore:     2021-03-11 16:02:15 +0100 CET
+NotAfter:      2021-06-03 17:02:14 +0200 CEST
+CommonName:    *.google.co.jp
+MinTLSVersion: TLS 1.0
+SANs:          [*.google.co.jp google.co.jp]
+Error:     
 
 ```
 
@@ -53,32 +55,35 @@ So you can get server certificate information of not only web server but also *m
 
 ```sh
 $ cert github.com google.co.jp:443 imap.gmail.com:993
-DomainName: github.com
-IP:         192.30.255.113
-Issuer:     DigiCert SHA2 Extended Validation Server CA
-NotBefore:  2016-03-10 09:00:00 +0900 JST
-NotAfter:   2018-05-17 21:00:00 +0900 JST
-CommonName: github.com
-SANs:       [github.com www.github.com]
-Error:
+DomainName:    github.com
+IP:            140.82.121.3
+Issuer:        DigiCert TLS Hybrid ECC SHA384 2020 CA1
+NotBefore:     2021-03-12 01:00:00 +0100 CET
+NotAfter:      2022-03-24 00:59:59 +0100 CET
+CommonName:    github.com
+MinTLSVersion: TLS 1.2
+SANs:          [github.com www.github.com]
+Error:         
 
-DomainName: google.co.jp
-IP:         172.217.27.163
-Issuer:     Google Internet Authority G3
-NotBefore:  2017-10-17 19:59:51 +0900 JST
-NotAfter:   2018-01-09 19:00:00 +0900 JST
-CommonName: *.google.co.jp
-SANs:       [*.google.co.jp google.co.jp]
-Error:
+DomainName:    google.co.jp
+IP:            216.58.213.195
+Issuer:        GTS CA 1O1
+NotBefore:     2021-03-11 16:02:15 +0100 CET
+NotAfter:      2021-06-03 17:02:14 +0200 CEST
+CommonName:    *.google.co.jp
+MinTLSVersion: TLS 1.0
+SANs:          [*.google.co.jp google.co.jp]
+Error:         
 
-DomainName: imap.gmail.com
-IP:         64.233.188.108
-Issuer:     Google Internet Authority G2
-NotBefore:  2017-10-17 19:10:29 +0900 JST
-NotAfter:   2017-12-29 09:00:00 +0900 JST
-CommonName: imap.gmail.com
-SANs:       [imap.gmail.com]
-Error:
+DomainName:    imap.gmail.com
+IP:            142.251.9.109
+Issuer:        GTS CA 1O1
+NotBefore:     2021-02-23 16:41:18 +0100 CET
+NotAfter:      2021-05-18 17:41:17 +0200 CEST
+CommonName:    imap.gmail.com
+MinTLSVersion: TLS 1.0
+SANs:          [imap.gmail.com]
+Error:         
 
 ```
 
@@ -122,17 +127,18 @@ Use `cert -f json`.
 $ cert -f json github.com | jq .
 [
   {
-    "DomainName": "github.com",
-    "IP": "192.30.255.112",
-    "Issuer": "DigiCert SHA2 Extended Validation Server CA",
-    "CommonName": "github.com",
-    "SANs": [
+    "domainName": "github.com",
+    "ip": "140.82.121.3",
+    "issuer": "DigiCert TLS Hybrid ECC SHA384 2020 CA1",
+    "commonName": "github.com",
+    "sans": [
       "github.com",
       "www.github.com"
     ],
-    "NotBefore": "2016-03-10 09:00:00 +0900 JST",
-    "NotAfter": "2018-05-17 21:00:00 +0900 JST",
-    "Error": ""
+    "notBefore": "2021-03-12 01:00:00 +0100 CET",
+    "notAfter": "2022-03-24 00:59:59 +0100 CET",
+    "minimumTLSVersion": "TLS 1.2",
+    "error": ""
   }
 ]
 ```

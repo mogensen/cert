@@ -96,15 +96,17 @@ func SplitHostPort(hostport string) (string, string, error) {
 }
 
 type Cert struct {
-	DomainName string   `json:"domainName"`
-	IP         string   `json:"ip"`
-	Issuer     string   `json:"issuer"`
-	CommonName string   `json:"commonName"`
-	SANs       []string `json:"sans"`
-	NotBefore  string   `json:"notBefore"`
-	NotAfter   string   `json:"notAfter"`
-	Error      string   `json:"error"`
-	certChain  []*x509.Certificate
+	DomainName             string   `json:"domainName"`
+	IP                     string   `json:"ip"`
+	Issuer                 string   `json:"issuer"`
+	CommonName             string   `json:"commonName"`
+	SANs                   []string `json:"sans"`
+	NotBefore              string   `json:"notBefore"`
+	NotAfter               string   `json:"notAfter"`
+	MinimumTLSVersionConst uint16   `json:"-"`
+	MinimumTLSVersion      string   `json:"minimumTLSVersion"`
+	Error                  string   `json:"error"`
+	certChain              []*x509.Certificate
 }
 
 func cipherSuite() ([]uint16, error) {
@@ -218,17 +220,20 @@ func NewCert(hostport string) *Cert {
 			errorMsg = "x905: " + err.Error()
 		}
 	}
+	minTLS, minTLSStr, err := findMinTLSVersion(host, port)
 
 	return &Cert{
-		DomainName: host,
-		IP:         ip,
-		Issuer:     cert.Issuer.CommonName,
-		CommonName: cert.Subject.CommonName,
-		SANs:       cert.DNSNames,
-		NotBefore:  cert.NotBefore.In(loc).String(),
-		NotAfter:   cert.NotAfter.In(loc).String(),
-		Error:      errorMsg,
-		certChain:  certChain,
+		DomainName:             host,
+		IP:                     ip,
+		Issuer:                 cert.Issuer.CommonName,
+		CommonName:             cert.Subject.CommonName,
+		SANs:                   cert.DNSNames,
+		NotBefore:              cert.NotBefore.In(loc).String(),
+		NotAfter:               cert.NotAfter.In(loc).String(),
+		MinimumTLSVersionConst: minTLS,
+		MinimumTLSVersion:      minTLSStr,
+		Error:                  errorMsg,
+		certChain:              certChain,
 	}
 }
 
@@ -278,14 +283,15 @@ func NewCerts(s []string) (Certs, error) {
 	return certs, nil
 }
 
-const defaultTempl = `{{range .}}DomainName: {{.DomainName}}
-IP:         {{.IP}}
-Issuer:     {{.Issuer}}
-NotBefore:  {{.NotBefore}}
-NotAfter:   {{.NotAfter}}
-CommonName: {{.CommonName}}
-SANs:       {{.SANs}}
-Error:      {{.Error}}
+const defaultTempl = `{{range .}}DomainName:    {{.DomainName}}
+IP:            {{.IP}}
+Issuer:        {{.Issuer}}
+NotBefore:     {{.NotBefore}}
+NotAfter:      {{.NotAfter}}
+CommonName:    {{.CommonName}}
+MinTLSVersion: {{.MinimumTLSVersion}}
+SANs:          {{.SANs}}
+Error:         {{.Error}}
 
 {{end}}
 `
@@ -305,9 +311,9 @@ func (certs Certs) String() string {
 	return b.String()
 }
 
-const markdownTempl = `DomainName | IP | Issuer | NotBefore | NotAfter | CN | SANs | Error
+const markdownTempl = `DomainName | IP | Issuer | NotBefore | NotAfter | CN | MinTLSVersion | SANs | Error
 --- | --- | --- | --- | --- | --- | --- | ---
-{{range .}}{{.DomainName}} | {{.IP}} | {{.Issuer}} | {{.NotBefore}} | {{.NotAfter}} | {{.CommonName}} | {{range .SANs}}{{.}}<br/>{{end}} | {{.Error}}
+{{range .}}{{.DomainName}} | {{.IP}} | {{.Issuer}} | {{.NotBefore}} | {{.NotAfter}} | {{.CommonName}} | {{.MinimumTLSVersion}} | {{range .SANs}}{{.}}<br/>{{end}} | {{.Error}}
 {{end}}
 `
 

@@ -8,12 +8,14 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func stubCert() {
 	serverCert = func(host, port string) ([]*x509.Certificate, string, error) {
 		return []*x509.Certificate{
-			&x509.Certificate{
+			{
 				Issuer: pkix.Name{
 					CommonName: "CA for test",
 				},
@@ -24,7 +26,7 @@ func stubCert() {
 				NotBefore: time.Date(2017, time.January, 1, 0, 0, 0, 0, time.UTC),
 				NotAfter:  time.Date(2118, time.January, 1, 0, 0, 0, 0, time.UTC),
 			},
-			&x509.Certificate{
+			{
 				Issuer: pkix.Name{
 					CommonName: "parent of CA for test",
 				},
@@ -149,22 +151,25 @@ func TestCertsAsString(t *testing.T) {
 	certChain, _, _ := serverCert("example.com", defaultPort)
 	origCert := certChain[0]
 
-	expected := fmt.Sprintf(`DomainName: example.com
-IP:         127.0.0.1
-Issuer:     CA for test
-NotBefore:  %s
-NotAfter:   %s
-CommonName: example.com
-SANs:       [example.com www.example.com]
-Error:      
+	expected := fmt.Sprintf(`DomainName:    example.com
+IP:            127.0.0.1
+Issuer:        CA for test
+NotBefore:     %s
+NotAfter:      %s
+CommonName:    example.com
+MinTLSVersion: TLS 1.0
+SANs:          [example.com www.example.com]
+Error:         
 
 
 `, origCert.NotBefore.String(), origCert.NotAfter.String())
 
 	certs, _ := NewCerts([]string{"example.com"})
 
-	if certs.String() != expected {
-		t.Errorf(`unexpected return value %q, want %q`, certs.String(), expected)
+	got := certs.String()
+	if got != expected {
+		t.Logf(cmp.Diff(got, expected))
+		t.Errorf(`unexpected return value %q, want %q`, got, expected)
 	}
 }
 
@@ -172,16 +177,18 @@ func TestCertsAsMarkdown(t *testing.T) {
 	certChain, _, _ := serverCert("example.com", defaultPort)
 	origCert := certChain[0]
 
-	expected := fmt.Sprintf(`DomainName | IP | Issuer | NotBefore | NotAfter | CN | SANs | Error
+	expected := fmt.Sprintf(`DomainName | IP | Issuer | NotBefore | NotAfter | CN | MinTLSVersion | SANs | Error
 --- | --- | --- | --- | --- | --- | --- | ---
-example.com | 127.0.0.1 | CA for test | %s | %s | example.com | example.com<br/>www.example.com<br/> | 
+example.com | 127.0.0.1 | CA for test | %s | %s | example.com | TLS 1.0 | example.com<br/>www.example.com<br/> | 
 
 `, origCert.NotBefore.String(), origCert.NotAfter.String())
 
 	certs, _ := NewCerts([]string{"example.com"})
 
-	if certs.Markdown() != expected {
-		t.Errorf(`unexpected return value %q, want %q`, certs.Markdown(), expected)
+	got := certs.Markdown()
+	if got != expected {
+		t.Logf(cmp.Diff(got, expected))
+		t.Errorf(`unexpected return value %q, want %q`, got, expected)
 	}
 }
 
@@ -189,12 +196,14 @@ func TestCertsAsJSON(t *testing.T) {
 	certChain, _, _ := serverCert("example.com", defaultPort)
 	origCert := certChain[0]
 
-	expected := fmt.Sprintf("[{\"domainName\":\"example.com\",\"ip\":\"127.0.0.1\",\"issuer\":\"CA for test\",\"commonName\":\"example.com\",\"sans\":[\"example.com\",\"www.example.com\"],\"notBefore\":%q,\"notAfter\":%q,\"error\":\"\"}]", origCert.NotBefore.String(), origCert.NotAfter.String())
+	expected := fmt.Sprintf("[{\"domainName\":\"example.com\",\"ip\":\"127.0.0.1\",\"issuer\":\"CA for test\",\"commonName\":\"example.com\",\"sans\":[\"example.com\",\"www.example.com\"],\"notBefore\":%q,\"notAfter\":%q,\"minimumTLSVersion\":\"TLS 1.0\",\"error\":\"\"}]", origCert.NotBefore.String(), origCert.NotAfter.String())
 
 	certs, _ := NewCerts([]string{"example.com"})
 
-	if string(certs.JSON()) != expected {
-		t.Errorf(`unexpected return value %q, want %q`, certs.JSON(), expected)
+	got := certs.JSON()
+	if got != expected {
+		t.Logf(cmp.Diff(got, expected))
+		t.Errorf(`unexpected return value %q, want %q`, got, expected)
 	}
 }
 
@@ -218,8 +227,10 @@ func TestSetUserTempl(t *testing.T) {
 
 	certs, _ := NewCerts([]string{"example.com"})
 
-	if certs.String() != expected {
-		t.Errorf(`unexpected return value %q, want %q`, certs.String(), expected)
+	got := certs.String()
+	if got != expected {
+		t.Logf(cmp.Diff(got, expected))
+		t.Errorf(`unexpected return value %q, want %q`, got, expected)
 	}
 
 	userTempl = ""
